@@ -1,0 +1,34 @@
+name: drivability baseline
+
+on:
+  push:
+    branches: [baseline-linux]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  BNE_TELEMETRY: "off"
+
+jobs:
+  baseline:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Dependencies
+        run: python -m pip install -r server/requirements.txt lupa==2.8 scipy zstandard
+      - name: Build required native kernels
+        run: python tools/build_native.py
+      - name: Drivability baseline (Linux)
+        run: python server/tests/drivability.py --update
+      - name: The scores
+        run: python server/tests/drivability.py --baseline
+      - uses: actions/upload-artifact@v7
+        with:
+          name: drivability-baseline
+          path: server/tests/fixtures/drivability_baseline.json
